@@ -40,7 +40,7 @@ DbSearcher searcher = new DbSearcher("数据库文件路径", QueryType.BINARY, 
 
 ## 线程安全
 
-请注意，只有 MEMORY 查询模式是线程安全的。如果你在高并发环境下使用 BINARY 或 BTREE 查询模式，可能会导致打开的文件过多的错误。在这种情况下，你可以增加内核中允许打开的最大文件数（fs.file-max），或者使用 MEMORY 查询模式。
+请注意，只有 MEMORY 查询模式是线程安全的。如果你在高并发环境下使用 BINARY 或 BTREE 查询模式，可能会导致打开的文件过多的错误。在这种情况下，你可以增加内核中允许打开的最大文件数（fs.file-max），或者使用 MEMORY 查询模式。当然更合理的一个方式是为线程池中的每一个线程只创建一个DbSearcher实例。
 
 ## 关闭数据库
 
