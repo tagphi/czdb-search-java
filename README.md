@@ -44,7 +44,7 @@ DbSearcher searcher = new DbSearcher("数据库文件路径", QueryType.BINARY, 
 
 ## 关闭数据库
 
-在完成所有查询后，你应该关闭数据库。
+当查询结束时，你应该关闭数据库。注意**并不是说**每次查询都需要创建DbSearcher实例查完后关闭，如果是为每个线程创建一个DbSearcher实例，那么只有在线程结束时才需要关闭数据库。
 
 ```java
 searcher.close();
