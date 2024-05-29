@@ -25,10 +25,10 @@ public class TestSearchAll {
     public void testIpv6Db() {
         try {
             // Create a DbSearcher instance for IPv6
-            DbSearcher _searcher = new DbSearcher("/Users/liucong/Downloads/ipv6.czdb", QueryType.MEMORY, "Mef4JXjVsTvGAeFj9Z06FQ==");
+            DbSearcher _searcher = new DbSearcher("/tmp/ipv6.czdb", QueryType.MEMORY, "Mef4JXjVsTvGAeFj9Z06FQ==");
 
             // Read the file of IPv6 addresses and regions
-            BufferedReader bfr = new BufferedReader(new FileReader("/Users/liucong/Downloads/cz_ipv6_reduce_region_10000.txt"));
+            BufferedReader bfr = new BufferedReader(new FileReader("/tmp/cz_ipv6_reduce_region_10000.txt"));
 
             // Create a log file for errors
             BufferedWriter bwr = new BufferedWriter(new FileWriter("../../data/error_ipv6_log.txt", true));
@@ -49,10 +49,10 @@ public class TestSearchAll {
     public void testIpv4Db() {
         try {
             // Create a DbSearcher instance for IPv4
-            DbSearcher _searcher = new DbSearcher("/Users/liucong/Downloads/ipv4.czdb", QueryType.MEMORY, "Mef4JXjVsTvGAeFj9Z06FQ==");
+            DbSearcher _searcher = new DbSearcher("/tmp/ipv4.czdb", QueryType.MEMORY, "Mef4JXjVsTvGAeFj9Z06FQ==");
 
             // Read the file of IPv4 addresses and regions
-            BufferedReader bfr = new BufferedReader(new FileReader("/Users/liucong/Downloads/cz_ipv4_reduce_region_10000.txt"));
+            BufferedReader bfr = new BufferedReader(new FileReader("/tmp/cz_ipv4_reduce_region_10000.txt"));
 
             // Create a log file for errors
             BufferedWriter bwr = new BufferedWriter(new FileWriter("../../data/error_ipv4_log.txt", true));
