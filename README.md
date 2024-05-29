@@ -1,6 +1,6 @@
 # czdb-search 使用指南
 
-czdb-search 是一个用于在数据库中搜索数据的类。它支持三种类型的搜索算法：内存搜索（MEMORY）、二进制搜索（BINARY）和B树搜索（BTREE）。数据库类型（IPv4或IPv6）和查询类型（MEMORY、BINARY、BTREE）在运行时确定。
+czdb-search 是一个用于在数据库中搜索数据的类。它支持三种类型的搜索算法：内存搜索（MEMORY）、二分搜索（BINARY）和B树搜索（BTREE）。数据库类型（IPv4或IPv6）和查询类型（MEMORY、BINARY、BTREE）在运行时确定。
 
 ## 支持 IPv4 和 IPv6
 
