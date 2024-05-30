@@ -1,6 +1,6 @@
 # czdb-search 使用指南
 
-czdb-search 是一个用于在数据库中搜索数据的类。它支持三种类型的搜索算法：内存搜索（MEMORY）、二分搜索（BINARY）和B树搜索（BTREE）。数据库类型（IPv4或IPv6）和查询类型（MEMORY、BINARY、BTREE）在运行时确定。
+czdb-search 是一个用于在纯真(CZ88)IP库中搜索数据的类。它支持三种类型的搜索算法：内存搜索（MEMORY）、二分搜索（BINARY）和B树搜索（BTREE）。数据库类型（IPv4或IPv6）和查询类型（MEMORY、BINARY、BTREE）在运行时确定。
 
 ## Maven 依赖
 
@@ -13,6 +13,7 @@ czdb-search 是一个用于在数据库中搜索数据的类。它支持三种�
     <version>${cz88db.version}</version>
 </dependency>
 ```
+请替换`${cz88db.version}`为你想要使用的版本。目前最新的版本是`1.0`。
 
 ## 支持 IPv4 和 IPv6
 
@@ -22,7 +23,7 @@ czdb-search 支持 IPv4 和 IPv6 地址的查询。在创建 DbSearcher 实例�
 
 ## 如何使用
 
-首先，你需要创建一个 DbSearcher 的实例。在创建实例时，你需要提供数据库文件的路径、查询类型和用于解密数据库文件头块的密钥。
+首先，你需要创建一个 DbSearcher 的实例。在创建实例时，你需要提供数据库文件的路径、查询类型和用于解密数据库的密钥。
 
 ```java
 DbSearcher searcher = new DbSearcher("数据库文件路径", QueryType.MEMORY, "密钥");
