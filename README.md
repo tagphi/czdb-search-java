@@ -2,6 +2,18 @@
 
 czdb-search 是一个用于在数据库中搜索数据的类。它支持三种类型的搜索算法：内存搜索（MEMORY）、二分搜索（BINARY）和B树搜索（BTREE）。数据库类型（IPv4或IPv6）和查询类型（MEMORY、BINARY、BTREE）在运行时确定。
 
+## Maven 依赖
+
+如果你想在你的Maven项目中使用`czdb-search`，请在你的`pom.xml`中添加以下依赖：
+
+```xml
+<dependency>
+    <groupId>net.cz88</groupId>
+    <artifactId>czdb-search</artifactId>
+    <version>${cz88db.version}</version>
+</dependency>
+```
+
 ## 支持 IPv4 和 IPv6
 
 czdb-search 支持 IPv4 和 IPv6 地址的查询。在创建 DbSearcher 实例时，你需要提供相应的数据库文件和密钥。
