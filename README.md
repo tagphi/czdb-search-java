@@ -64,3 +64,23 @@ searcher.close();
 ```
 
 这将释放所有使用的资源，并关闭对数据库文件的访问。
+
+## 如何进行查询测试
+
+我们提供了一个名为 `SearcherTest` 的类，你可以通过命令行来使用它进行查询测试。以下是如何使用的说明：
+
+首先，你需要从 GitHub 的 release 中下载 `czdb-search-1.0.jar` 文件。你可以点击[这里](https://github.com/tagphi/czdb-search-java/releases)下载。
+
+然后，你可以运行 `SearcherTest`。它需要三个参数：
+
+- `-d` 或 `--dbFilePath`：数据库文件的路径。
+- `-t` 或 `--queryType`：查询类型。有效的类型有 `MEMORY`、`BINARY` 和 `BTREE`。
+- `-k` 或 `--key`：用于解密数据库文件的密钥。
+
+以下是一个运行 `SearcherTest` 的示例命令：
+
+```bash
+java -cp czdb-search-1.0.jar net.cz88.czdb.SearcherTest -d your-db-file-path -t MEMORY -k your-key
+```
+
+请将 your-db-file-path 和 your-key 替换为实际的值。  在运行 SearcherTest 后，你可以输入 IP 地址进行查询，或输入 'q' 退出程序。
