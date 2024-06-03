@@ -19,7 +19,7 @@ czdb-search 是一个用于在纯真(CZ88)IP库中搜索数据的类。它支持
 
 czdb-search 支持 IPv4 和 IPv6 地址的查询。在创建 DbSearcher 实例时，你需要提供相应的数据库文件和密钥。
 
-数据库文件和密钥可以从 [www.cz88.net](http://www.cz88.net) 获取。
+数据库文件和密钥可以从 [www.cz88.net](https://cz88.net/geo-public) 获取。
 
 ## 如何使用
 

@@ -13,12 +13,12 @@ public class TestSearcher {
 
     @Test
     public void ipv4MemoryQueryTest() throws Exception {
-        performQuery("/Users/liucong/Downloads/ipv4.czdb", "0.0.0.0");
+        performQuery("/Users/liucong/Downloads/offline_db.czdb", "1.32.240.0");
     }
 
     private void performQuery(String dbPath, String ip) throws Exception {
         try {
-            DbSearcher searcher = new DbSearcher(dbPath, QueryType.BTREE, "Mef4JXjVsTvGAeFj9Z06FQ==");
+            DbSearcher searcher = new DbSearcher(dbPath, QueryType.BINARY, "3fEhuZUEvDzRjKv9qvAzTQ==");
             double sTime = System.nanoTime();
             String region = searcher.search(ip);
             double cTime = (System.nanoTime() - sTime) / 1000000;
