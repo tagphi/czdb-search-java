@@ -18,7 +18,7 @@ public class TestSearcher {
 
     private void performQuery(String dbPath, String ip) throws Exception {
         try {
-            DbSearcher searcher = new DbSearcher(dbPath, QueryType.BINARY, "3fEhuZUEvDzRjKv9qvAzTQ==");
+            DbSearcher searcher = new DbSearcher(dbPath, QueryType.BTREE, "3fEhuZUEvDzRjKv9qvAzTQ==");
             double sTime = System.nanoTime();
             String region = searcher.search(ip);
             double cTime = (System.nanoTime() - sTime) / 1000000;

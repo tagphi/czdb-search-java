@@ -12,7 +12,7 @@ import net.cz88.czdb.utils.ByteUtil;
 public class IndexBlock {
     /**
      * The length of an index block in bytes.
-     * An index block consists of 32 bytes for the start IP, 32 bytes for the end IP, and 4 bytes for the data pointer and data length.
+     * An index block consists of 16 bytes for the start IP, 16 bytes for the end IP, and 4 bytes for the data pointer and data length.
      */
     private static int LENGTH = 36;
 

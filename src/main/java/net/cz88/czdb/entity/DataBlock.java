@@ -23,12 +23,6 @@ public class DataBlock {
      */
     private int dataPtr;
 
-    /**
-     * Constructs a new DataBlock with the specified region and data pointer.
-     *
-     * @param region  the region of the data block
-     * @param dataPtr the pointer to the data in the database file
-     */
     public DataBlock(String region, int dataPtr) {
         this.region = region;
         this.dataPtr = dataPtr;

@@ -299,54 +299,39 @@ public class DbSearcher {
             return getByIndexPtr(HeaderPtr[headerLength - 1]);
         }
 
-        int l = 0, h = headerLength, sptr = 0, eptr = 0;
+        int l = 0, h = headerLength - 1, sptr = 0, eptr = 0;
         while (l <= h) {
             int m = (l + h) >> 1;
-            // perfect matched, just return it
-            if (compareBytes(ip, HeaderSip[m], ipBytesLength) == 0) {
-                if (m > 0) {
-                    sptr = HeaderPtr[m - 1];
-                    eptr = HeaderPtr[m];
-                } else {
-                    sptr = HeaderPtr[m];
-                    eptr = HeaderPtr[m + 1];
-                }
+            int cmp = compareBytes(ip, HeaderSip[m], ipBytesLength);
 
-                break;
-            }
-
-            //less then the middle value
-            if (compareBytes(ip, HeaderSip[m], ipBytesLength) < 0) {
-                if (m == 0) {
-                    sptr = HeaderPtr[m];
-                    eptr = HeaderPtr[m + 1];
-                    break;
-                } else if (compareBytes(ip, HeaderSip[m - 1], ipBytesLength) > 0) {
-                    sptr = HeaderPtr[m - 1];
-                    eptr = HeaderPtr[m];
-                    break;
-                }
+            if (cmp < 0) {
                 h = m - 1;
-            } else {
-                if (m == headerLength - 1) {
-                    sptr = HeaderPtr[m - 1];
-                    eptr = HeaderPtr[m];
-                    break;
-                } else if (compareBytes(ip, HeaderSip[m + 1], ipBytesLength) <= 0) {
-                    sptr = HeaderPtr[m];
-                    eptr = HeaderPtr[m + 1];
-                    break;
-                }
+            } else if (cmp > 0) {
                 l = m + 1;
+            } else {
+                sptr = HeaderPtr[m > 0 ? m - 1 : m];
+                eptr = HeaderPtr[m];
+                break;
             }
         }
 
-        //match nothing just stop it
+        if (l > h) {
+            if (l < headerLength) {
+                sptr = HeaderPtr[l - 1];
+                eptr = HeaderPtr[l];
+            } else if (h >= 0) {
+                sptr = HeaderPtr[h];
+                eptr = HeaderPtr[h + 1];
+            }
+        }
+
         if (sptr == 0) {
             return null;
         }
+
         //2. search the index blocks to define the data
         int blockLen = eptr - sptr, blen = IndexBlock.getIndexBlockLength();
+
         //include the right border block
         byte[] iBuffer = new byte[blockLen + blen];
         raf.seek(sptr);
@@ -355,32 +340,39 @@ public class DbSearcher {
         l = 0;
         h = blockLen / blen;
         byte[] sip = new byte[16], eip = new byte[16];
-        long dataWrapperPtr = 0;
+        long dataBlockPtrNSize = 0;
+
         while (l <= h) {
             int m = (l + h) >> 1;
             int p = m * blen;
             System.arraycopy(iBuffer, p, sip, 0, 16);
-            if (compareBytes(ip, sip, ipBytesLength) < 0) {
+            System.arraycopy(iBuffer, p + 16, eip, 0, 16);
+
+            int cmpStart = compareBytes(ip, sip, ipBytesLength);
+            int cmpEnd = compareBytes(ip, eip, ipBytesLength);
+
+            if (cmpStart >= 0 && cmpEnd <= 0) {
+                // IP is in this block
+                dataBlockPtrNSize = ByteUtil.getIntLong(iBuffer, p + 32);
+
+                break;
+            } else if (cmpStart < 0) {
+                // IP is less than this block, search in the left half
                 h = m - 1;
             } else {
-                System.arraycopy(iBuffer, p + 16, eip, 0, 16);
-                if (compareBytes(ip, eip, ipBytesLength) > 0) {
-                    l = m + 1;
-                } else {
-                    dataWrapperPtr = ByteUtil.getIntLong(iBuffer, p + 32);
-                    break;
-                }
+                // IP is greater than this block, search in the right half
+                l = m + 1;
             }
         }
 
         //not matched
-        if (dataWrapperPtr == 0) {
+        if (dataBlockPtrNSize == 0) {
             return null;
         }
 
         //3. get the data
-        int dataLen = (int) ((dataWrapperPtr >> 24) & 0xFF);
-        int dataPtr = (int) ((dataWrapperPtr & 0x00FFFFFF));
+        int dataLen = (int) ((dataBlockPtrNSize >> 24) & 0xFF);
+        int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
 
         raf.seek(dataPtr);
         byte[] data = new byte[dataLen];

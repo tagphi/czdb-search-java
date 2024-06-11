@@ -132,6 +132,12 @@ public class DecryptedBlock {
         // Decrypt the data
         byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
 
+        StringBuilder sb = new StringBuilder();
+        for (byte b : decryptedBytes) {
+            sb.append(String.format("%02X ", b));
+        }
+        System.out.println(sb.toString());
+
         // Parse the decrypted bytes
         DecryptedBlock decryptedBlock = new DecryptedBlock();
         decryptedBlock.setClientId((int) ByteUtil.getIntLong(decryptedBytes, 0) >> 20);
