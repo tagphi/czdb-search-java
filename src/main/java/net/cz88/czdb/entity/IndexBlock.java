@@ -1,5 +1,6 @@
 package net.cz88.czdb.entity;
 
+import net.cz88.czdb.DbType;
 import net.cz88.czdb.utils.ByteUtil;
 
 /**
@@ -10,12 +11,6 @@ import net.cz88.czdb.utils.ByteUtil;
  * The data length is used to read the data block from the database.
  */
 public class IndexBlock {
-    /**
-     * The length of an index block in bytes.
-     * An index block consists of 16 bytes for the start IP, 16 bytes for the end IP, and 4 bytes for the data pointer and data length.
-     */
-    private static int LENGTH = 36;
-
     /**
      * The start IP address of the range that the data block covers.
      * It is a byte array of length 16.
@@ -40,6 +35,8 @@ public class IndexBlock {
      */
     private int dataLen;
 
+    private final DbType dbType;
+
     /**
      * Constructor for the IndexBlock class.
      * It initializes the start IP, end IP, data pointer, and data length with the provided values.
@@ -49,11 +46,12 @@ public class IndexBlock {
      * @param dataPtr The pointer to the data block in the database.
      * @param dataLen The length of the data block in bytes.
      */
-    public IndexBlock(byte[] startIp, byte[] endIp, int dataPtr, int dataLen) {
+    public IndexBlock(byte[] startIp, byte[] endIp, int dataPtr, int dataLen, DbType dbType) {
         this.startIp = startIp;
         this.endIp = endIp;
         this.dataPtr = dataPtr;
         this.dataLen = dataLen;
+        this.dbType = dbType;
     }
 
     public byte[] getStartIp() {
@@ -92,28 +90,33 @@ public class IndexBlock {
         return this;
     }
 
-    public static int getIndexBlockLength() {
-        return LENGTH;
+    public static int getIndexBlockLength(DbType dbType) {
+        // 16 bytes for start IP, 16 bytes for end IP if IPV6
+        // or 4 bytes for start IP and 4 bytes for end IP if IPV4
+        // + 4 bytes for data ptr and data len
+        return dbType == DbType.IPV4 ? 12 : 36;
     }
 
     /**
      * Returns a byte array representing the index block.
      * The byte array is structured as follows:
      * +------------+-----------+-----------+
-     * | 32bytes    | 32bytes   | 4bytes    |
+     * | 4/16 bytes    | 4/16bytes   | 4bytes    |
      * +------------+-----------+-----------+
      *  start ip      end ip      data ptr + len
      *
      * @return A byte array representing the index block.
      */
     public byte[] getBytes() {
-        byte[] b = new byte[36];
-        System.arraycopy(startIp, 0, b, 0, Math.min(startIp.length, 16));
-        System.arraycopy(endIp, 0, b, 16, Math.min(startIp.length, 16));
+        int ipBytesLength = DbType.IPV4 == dbType ? 4 : 16;
+
+        byte[] b = new byte[getIndexBlockLength(this.dbType)];
+        System.arraycopy(startIp, 0, b, 0, ipBytesLength);
+        System.arraycopy(endIp, 0, b, ipBytesLength, ipBytesLength);
 
         //write the data ptr and the length
         long mix = dataPtr | ((dataLen << 24) & 0xFF000000L);
-        ByteUtil.writeIntLong(b, 32, mix);
+        ByteUtil.writeIntLong(b, ipBytesLength * 2, mix);
 
         return b;
     }

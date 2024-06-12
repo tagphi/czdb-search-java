@@ -135,7 +135,7 @@ public class DbSearcher {
         }
         firstIndexPtr = ByteUtil.getIntLong(bytes, DbConstant.FIRST_INDEX_PTR);
         long lastIndexPtr = ByteUtil.getIntLong(bytes, DbConstant.END_INDEX_PTR);
-        totalIndexBlocks = (int) ((lastIndexPtr - firstIndexPtr) / IndexBlock.getIndexBlockLength()) + 1;
+        totalIndexBlocks = (int) ((lastIndexPtr - firstIndexPtr) / IndexBlock.getIndexBlockLength(dbType)) + 1;
     }
 
     private void initBtreeModeParam(RandomAccessFile raf) throws IOException {
@@ -157,7 +157,7 @@ public class DbSearcher {
 
         int indexLength = 20;
 
-        //fill the header, b.lenght / 20
+        //fill the header, b.length / 20
         int len = b.length / indexLength, idx = 0;
         HeaderSip = new byte[len][16];
         HeaderPtr = new int[len];
@@ -232,7 +232,7 @@ public class DbSearcher {
      */
     private DataBlock memorySearch(byte[] ip) throws UnsupportedEncodingException {
         // The length of an index block
-        int blockLen = IndexBlock.getIndexBlockLength();
+        int blockLen = IndexBlock.getIndexBlockLength(this.dbType);
 
         // Initialize the search range
         int l = 0, h = totalIndexBlocks;
@@ -330,7 +330,7 @@ public class DbSearcher {
         }
 
         //2. search the index blocks to define the data
-        int blockLen = eptr - sptr, blen = IndexBlock.getIndexBlockLength();
+        int blockLen = eptr - sptr, blen = IndexBlock.getIndexBlockLength(this.dbType);
 
         //include the right border block
         byte[] iBuffer = new byte[blockLen + blen];
@@ -339,21 +339,21 @@ public class DbSearcher {
 
         l = 0;
         h = blockLen / blen;
-        byte[] sip = new byte[16], eip = new byte[16];
+        byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
         long dataBlockPtrNSize = 0;
 
         while (l <= h) {
             int m = (l + h) >> 1;
             int p = m * blen;
-            System.arraycopy(iBuffer, p, sip, 0, 16);
-            System.arraycopy(iBuffer, p + 16, eip, 0, 16);
+            System.arraycopy(iBuffer, p, sip, 0, ipBytesLength);
+            System.arraycopy(iBuffer, p + ipBytesLength, eip, 0, ipBytesLength);
 
             int cmpStart = compareBytes(ip, sip, ipBytesLength);
             int cmpEnd = compareBytes(ip, eip, ipBytesLength);
 
             if (cmpStart >= 0 && cmpEnd <= 0) {
                 // IP is in this block
-                dataBlockPtrNSize = ByteUtil.getIntLong(iBuffer, p + 32);
+                dataBlockPtrNSize = ByteUtil.getIntLong(iBuffer, p + ipBytesLength * 2);
 
                 break;
             } else if (cmpStart < 0) {
@@ -388,7 +388,7 @@ public class DbSearcher {
      * @throws IOException
      */
     private DataBlock binarySearch(byte[] ip) throws IOException {
-        int blockLength = IndexBlock.getIndexBlockLength();
+        int blockLength = IndexBlock.getIndexBlockLength(this.dbType);
         //search the index blocks to define the data
         int l = 0, h = totalIndexBlocks;
         byte[] buffer = new byte[blockLength];

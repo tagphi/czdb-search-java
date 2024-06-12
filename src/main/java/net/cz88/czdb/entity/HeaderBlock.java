@@ -17,6 +17,7 @@ import net.cz88.czdb.utils.ByteUtil;
  * @author chenxin
  */
 public class HeaderBlock {
+    public static final int HEADER_LINE_SIZE = 20;
     /**
      * The index start IP address.
      */
