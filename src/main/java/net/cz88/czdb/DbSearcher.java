@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import sun.net.util.IPAddressUtil;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -96,6 +97,29 @@ public class DbSearcher {
         } else if (queryType == QueryType.BINARY) {
             initializeForBinarySearch();
         }
+    }
+
+    public DbSearcher(InputStream is, QueryType queryType, String key) throws Exception {
+        if (queryType != QueryType.MEMORY) {
+            throw new UnsupportedOperationException("input stream initialize only support memory mode");
+        }
+
+        this.queryType = queryType;
+        HyperHeaderBlock headerBlock = HyperHeaderDecoder.decrypt(is, key);
+        int rdSize = headerBlock.getDecryptedBlock().getRandomSize();
+
+        // skip rdSize bytes
+        is.skip(rdSize);
+
+        // load all bytes from is to a byte[] buffer
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        byte[] b = new byte[1024];
+        int n;
+        while ((n = is.read(b)) != -1) {
+            buffer.write(b, 0, n);
+        }
+        dbBinStr = buffer.toByteArray();
+        initMemoryOrBinaryModeParam(dbBinStr, dbBinStr.length);
     }
 
     /**
@@ -238,45 +262,43 @@ public class DbSearcher {
         int l = 0, h = totalIndexBlocks;
 
         // The start IP and end IP of the current index block
-        byte[] sip = new byte[16], eip = new byte[16];
+        byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
 
         // The data pointer of the found data block
-        long dataWrapperPtr = 0;
+        long dataBlockPtrNSize = 0;
 
         // Perform a binary search on the index blocks
         while (l <= h) {
             int m = (l + h) >> 1;
             int p = (int) (firstIndexPtr + m * blockLen);
+            System.arraycopy(dbBinStr, p, sip, 0, ipBytesLength);
+            System.arraycopy(dbBinStr, p + ipBytesLength, eip, 0, ipBytesLength);
 
-            // Get the start IP of the current index block
-            System.arraycopy(dbBinStr, p, sip, 0, 16);
+            int cmpStart = compareBytes(ip, sip, ipBytesLength);
+            int cmpEnd = compareBytes(ip, eip, ipBytesLength);
 
             // If the IP is less than the start IP, search the left half
-            if (compareBytes(ip, sip, ipBytesLength) < 0) {
+            if (cmpStart >= 0 && cmpEnd <= 0) {
+                // IP is in this block
+                dataBlockPtrNSize = ByteUtil.getIntLong(dbBinStr, p + ipBytesLength * 2);
+                break;
+            } else if (cmpStart < 0) {
+                // IP is less than this block, search in the left half
                 h = m - 1;
             } else {
-                // Get the end IP of the current index block
-                System.arraycopy(dbBinStr, p + 16, eip, 0, 16);
-
-                // If the IP is greater than the end IP, search the right half
-                if (compareBytes(ip, eip, ipBytesLength) > 0) {
-                    l = m + 1;
-                } else {
-                    // If the IP is between the start IP and the end IP, get the data pointer and stop the search
-                    dataWrapperPtr = ByteUtil.getIntLong(dbBinStr, p + 32);
-                    break;
-                }
+                // IP is greater than this block, search in the right half
+                l = m + 1;
             }
         }
 
-        // If the search is unsuccessful, return null
-        if (dataWrapperPtr == 0) {
+        //not matched
+        if (dataBlockPtrNSize == 0) {
             return null;
         }
 
         // Get the data length and the data pointer from the data wrapper
-        int dataLen = (int) ((dataWrapperPtr >> 24) & 0xFF);
-        int dataPtr = (int) ((dataWrapperPtr & 0x00FFFFFF));
+        int dataLen = (int) ((dataBlockPtrNSize >> 24) & 0xFF);
+        int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
 
         // Get the region from the database binary string
         String region = new String(dbBinStr, dataPtr, dataLen, StandardCharsets.UTF_8);
@@ -388,39 +410,48 @@ public class DbSearcher {
      * @throws IOException
      */
     private DataBlock binarySearch(byte[] ip) throws IOException {
-        int blockLength = IndexBlock.getIndexBlockLength(this.dbType);
+        int blen = IndexBlock.getIndexBlockLength(this.dbType);
+
         //search the index blocks to define the data
         int l = 0, h = totalIndexBlocks;
-        byte[] buffer = new byte[blockLength];
-        byte[] sip = new byte[16], eip = new byte[16];
-        long dataWrapperPtr = 0;
+        byte[] buffer = new byte[blen];
+        byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
+        long dataBlockPtrNSize = 0;
+
         while (l <= h) {
             int m = (l + h) >> 1;
+
             //set the file pointer
-            raf.seek(firstIndexPtr + m * blockLength);
+            raf.seek(firstIndexPtr + (long) m * blen);
             raf.readFully(buffer, 0, buffer.length);
-            System.arraycopy(buffer, 0, sip, 0, 16);
-            if (compareBytes(ip, sip, ipBytesLength) < 0) {
+            System.arraycopy(buffer, 0, sip, 0, ipBytesLength);
+            System.arraycopy(buffer, ipBytesLength, eip, 0, ipBytesLength);
+
+            int cmpStart = compareBytes(ip, sip, ipBytesLength);
+            int cmpEnd = compareBytes(ip, eip, ipBytesLength);
+
+            if (cmpStart >= 0 && cmpEnd <= 0) {
+                // IP is in this block
+                dataBlockPtrNSize = ByteUtil.getIntLong(buffer, ipBytesLength * 2);
+
+                break;
+            } else if (cmpStart < 0) {
+                // IP is less than this block, search in the left half
                 h = m - 1;
             } else {
-                System.arraycopy(buffer, 16, eip, 0, 16);
-                if (compareBytes(ip, eip, ipBytesLength) > 0) {
-                    l = m + 1;
-                } else {
-                    dataWrapperPtr = ByteUtil.getIntLong(buffer, 32);
-                    break;
-                }
+                // IP is greater than this block, search in the right half
+                l = m + 1;
             }
         }
 
         //not matched
-        if (dataWrapperPtr == 0) {
+        if (dataBlockPtrNSize == 0) {
             return null;
         }
 
         //get the data
-        int dataLen = (int) ((dataWrapperPtr >> 24) & 0xFF);
-        int dataPtr = (int) ((dataWrapperPtr & 0x00FFFFFF));
+        int dataLen = (int) ((dataBlockPtrNSize >> 24) & 0xFF);
+        int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
 
         raf.seek(dataPtr);
         byte[] data = new byte[dataLen];
@@ -545,6 +576,16 @@ public class DbSearcher {
             return 0;
         } else {
             return Integer.compare(bytes1.length, bytes2.length);
+        }
+    }
+
+    private String byte2IpString(byte[] bytes) {
+        try {
+            InetAddress address = InetAddress.getByAddress(bytes);
+            return address.getHostAddress();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }
