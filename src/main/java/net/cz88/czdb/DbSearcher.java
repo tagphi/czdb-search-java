@@ -111,15 +111,20 @@ public class DbSearcher {
         // skip rdSize bytes
         is.skip(rdSize);
 
-        // load all bytes from is to a byte[] buffer
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        byte[] b = new byte[1024];
-        int n;
-        while ((n = is.read(b)) != -1) {
-            buffer.write(b, 0, n);
+        try {
+            // load all bytes from is to a byte[] buffer
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            byte[] b = new byte[1024];
+            int n;
+            while ((n = is.read(b)) != -1) {
+                buffer.write(b, 0, n);
+            }
+
+            dbBinStr = buffer.toByteArray();
+            initMemoryOrBinaryModeParam(dbBinStr, dbBinStr.length);
+        } finally {
+            is.close();
         }
-        dbBinStr = buffer.toByteArray();
-        initMemoryOrBinaryModeParam(dbBinStr, dbBinStr.length);
     }
 
     /**
@@ -513,7 +518,10 @@ public class DbSearcher {
             HeaderSip = null;
             HeaderPtr = null;
             dbBinStr = null;
-            raf.close();
+
+            if (raf != null) {
+                raf.close();
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
