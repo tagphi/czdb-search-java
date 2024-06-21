@@ -1,5 +1,10 @@
 package net.cz88.czdb.entity;
 
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessageUnpacker;
+
+import java.io.IOException;
+
 /**
  * The DataBlock class represents a data block in the database.
  * It contains a region and a pointer to the data in the database file.
@@ -15,7 +20,7 @@ public class DataBlock {
      * The region of the data block.
      * It is a string representing the geographical region that the data block covers.
      */
-    private String region;
+    private byte[] region;
 
     /**
      * The pointer to the data in the database file.
@@ -23,18 +28,9 @@ public class DataBlock {
      */
     private int dataPtr;
 
-    public DataBlock(String region, int dataPtr) {
+    public DataBlock(byte[] region, int dataPtr) {
         this.region = region;
         this.dataPtr = dataPtr;
-    }
-
-    /**
-     * Constructs a new DataBlock with the specified region and a default data pointer of 0.
-     *
-     * @param region the region of the data block
-     */
-    public DataBlock(String region) {
-        this(region, 0);
     }
 
     /**
@@ -42,8 +38,12 @@ public class DataBlock {
      *
      * @return the region of this data block
      */
-    public String getRegion() {
-        return region;
+    public String getRegion(byte[] geoMapData, long columnSelection) {
+        try {
+            return unpack(geoMapData, columnSelection);
+        } catch (IOException e) {
+            return "null";
+        }
     }
 
     /**
@@ -52,7 +52,7 @@ public class DataBlock {
      * @param region the new region
      * @return this data block
      */
-    public DataBlock setRegion(String region) {
+    public DataBlock setRegion(byte[] region) {
         this.region = region;
         return this;
     }
@@ -77,15 +77,35 @@ public class DataBlock {
         return this;
     }
 
-    /**
-     * Returns a string representation of this data block, which is a concatenation of the region and data pointer, separated by a pipe character.
-     *
-     * @return a string representation of this data block
-     */
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(region).append('|').append(dataPtr);
-        return sb.toString();
+    private String unpack(byte[] geoMapData, long columnSelection) throws IOException {
+        try (MessageUnpacker regionUnpacker = MessagePack.newDefaultUnpacker(region)) {
+            int geoPosMixSize = regionUnpacker.unpackInt();
+            String otherData = regionUnpacker.unpackString();
+
+            int dataLen = (geoPosMixSize >> 24) & 0xFF;
+            int dataPtr = (geoPosMixSize & 0x00FFFFFF);
+
+            // read the region data from the geoMapData
+            byte[] regionData = new byte[dataLen];
+            System.arraycopy(geoMapData, dataPtr, regionData, 0, dataLen);
+            StringBuilder sb = new StringBuilder();
+
+            try (MessageUnpacker geoColumnUnpacker = MessagePack.newDefaultUnpacker(regionData)) {
+                int columnNumber = geoColumnUnpacker.unpackArrayHeader();
+
+                for (int i = 0; i < columnNumber; i++) {
+                    boolean columnSelected = (columnSelection >> (i + 1) & 1) == 1;
+                    String value = geoColumnUnpacker.unpackString();
+                    value = "".equalsIgnoreCase(value) ? "null" : value;
+
+                    if (columnSelected) {
+                        sb.append(value);
+                        sb.append("\t");
+                    }
+                }
+            }
+
+            return sb + otherData;
+        }
     }
 }

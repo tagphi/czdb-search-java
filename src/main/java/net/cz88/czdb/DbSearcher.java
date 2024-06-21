@@ -13,7 +13,6 @@ import sun.net.util.IPAddressUtil;
 
 import java.io.*;
 import java.net.InetAddress;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -75,6 +74,9 @@ public class DbSearcher {
      */
     private byte[] dbBinStr = null;
 
+    private long columnSelection = 0;
+    private byte[] geoMapData = null;
+
     /**
      * Constructor for DbSearcher class.
      * Initializes the DbSearcher instance based on the provided database file, query type, and key.
@@ -89,6 +91,16 @@ public class DbSearcher {
         this.queryType = queryType;
         HyperHeaderBlock headerBlock = HyperHeaderDecoder.decrypt(Files.newInputStream(Paths.get(dbFile)), key);
         raf = new Cz88RandomAccessFile(dbFile, "r", headerBlock.getHeaderSize());
+
+        // set db type
+        raf.seek(0);
+        byte[] superBytes = new byte[DbConstant.SUPER_PART_LENGTH];
+        raf.readFully(superBytes, 0, superBytes.length);
+        dbType = (superBytes[0] & 1) == 0 ? DbType.IPV4 : DbType.IPV6;
+        ipBytesLength = dbType == DbType.IPV4 ? 4 : 16;
+
+        // load geo setting
+        loadGeoSetting(raf);
 
         if (queryType == QueryType.MEMORY) {
             initializeForMemorySearch();
@@ -127,6 +139,34 @@ public class DbSearcher {
         }
     }
 
+    private void loadGeoSetting(RandomAccessFile raf) {
+        // set position to end index ptr + ip byte length * 2 + 4
+        try {
+            raf.seek(DbConstant.END_INDEX_PTR);
+            byte[] data = new byte[4];
+            raf.readFully(data);
+
+            long endIndexPtr = ByteUtil.getIntLong(data, 0);
+
+            long columnSelectionPtr = endIndexPtr + ipBytesLength * 2L + 4;
+            raf.seek(columnSelectionPtr);
+            raf.readFully(data);
+
+            this.columnSelection = ByteUtil.getIntLong(data, 0);
+
+            long geoMapPtr = columnSelectionPtr + 4;
+            raf.seek(geoMapPtr);
+            raf.readFully(data);
+            int geoMapSize = (int)ByteUtil.getIntLong(data, 0);
+
+            raf.seek(geoMapPtr + 4);
+            geoMapData = new byte[geoMapSize];
+            raf.readFully(geoMapData);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * Initializes the DbSearcher instance for memory search.
      * Reads the entire database file into memory and then initializes the parameters for memory or binary search.
@@ -155,9 +195,7 @@ public class DbSearcher {
     }
 
     private void initMemoryOrBinaryModeParam(byte[] bytes, long fileSize) {
-        dbType = (bytes[0] & 1) == 0 ? DbType.IPV4 : DbType.IPV6;
         totalHeaderBlockSize = ByteUtil.getIntLong(bytes, DbConstant.HEADER_BLOCK_PTR);
-        ipBytesLength = dbType == DbType.IPV4 ? 4 : 16;
         long fileSizeInFile = ByteUtil.getIntLong(bytes, DbConstant.FILE_SIZE_PTR);
         if (fileSizeInFile != fileSize) {
             throw new RuntimeException(String.format("db file size error, excepted [%s], real [%s]", fileSizeInFile, fileSize));
@@ -172,9 +210,8 @@ public class DbSearcher {
         raf.seek(0);
         byte[] superBytes = new byte[DbConstant.SUPER_PART_LENGTH];
         raf.readFully(superBytes, 0, superBytes.length);
-        dbType = (superBytes[0] & 1) == 0 ? DbType.IPV4 : DbType.IPV6;
         totalHeaderBlockSize = ByteUtil.getIntLong(superBytes, DbConstant.HEADER_BLOCK_PTR);
-        ipBytesLength = dbType == DbType.IPV4 ? 4 : 16;
+
         long fileSizeInFile = ByteUtil.getIntLong(superBytes, DbConstant.FILE_SIZE_PTR);
         long realFileSize = raf.length();
         if (fileSizeInFile != realFileSize) {
@@ -245,7 +282,7 @@ public class DbSearcher {
         if (dataBlock == null) {
             return null;
         } else {
-            return dataBlock.getRegion();
+            return dataBlock.getRegion(geoMapData, columnSelection);
         }
     }
 
@@ -306,7 +343,8 @@ public class DbSearcher {
         int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
 
         // Get the region from the database binary string
-        String region = new String(dbBinStr, dataPtr, dataLen, StandardCharsets.UTF_8);
+        byte[] region = new byte[dataLen];
+        System.arraycopy(dbBinStr, dataPtr, region, 0, dataLen);
 
         // Return the data block containing the region and the data pointer
         return new DataBlock(region, dataPtr);
@@ -402,9 +440,8 @@ public class DbSearcher {
         int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
 
         raf.seek(dataPtr);
-        byte[] data = new byte[dataLen];
-        raf.readFully(data, 0, data.length);
-        String region = new String(data, StandardCharsets.UTF_8);
+        byte[] region = new byte[dataLen];
+        raf.readFully(region, 0, region.length);
         return new DataBlock(region, dataPtr);
     }
 
@@ -459,9 +496,8 @@ public class DbSearcher {
         int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
 
         raf.seek(dataPtr);
-        byte[] data = new byte[dataLen];
-        raf.readFully(data, 0, data.length);
-        String region = new String(data, StandardCharsets.UTF_8);
+        byte[] region = new byte[dataLen];
+        raf.readFully(region, 0, region.length);
         return new DataBlock(region, dataPtr);
     }
 
@@ -482,9 +518,8 @@ public class DbSearcher {
         int dataPtr = (int) ((extra & 0x00FFFFFF));
 
         raf.seek(dataPtr);
-        byte[] data = new byte[dataLen];
-        raf.readFully(data, 0, data.length);
-        String region = new String(data, StandardCharsets.UTF_8);
+        byte[] region = new byte[dataLen];
+        raf.readFully(region, 0, region.length);
 
         return new DataBlock(region, dataPtr);
     }
