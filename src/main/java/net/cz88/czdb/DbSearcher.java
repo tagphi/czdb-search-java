@@ -13,6 +13,7 @@ import sun.net.util.IPAddressUtil;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -133,6 +134,7 @@ public class DbSearcher {
             }
 
             dbBinStr = buffer.toByteArray();
+            loadGeoSetting(dbBinStr);
             initMemoryOrBinaryModeParam(dbBinStr, dbBinStr.length);
         } finally {
             is.close();
@@ -165,6 +167,37 @@ public class DbSearcher {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void loadGeoSetting(byte[] dbBytes) {
+        ByteBuffer buffer = ByteBuffer.wrap(dbBytes);
+
+        // Set ipBytesLength
+        byte[] superBytes = new byte[DbConstant.SUPER_PART_LENGTH];
+        buffer.get(superBytes);
+        dbType = (superBytes[0] & 1) == 0 ? DbType.IPV4 : DbType.IPV6;
+        ipBytesLength = dbType == DbType.IPV4 ? 4 : 16;
+
+        buffer.position(DbConstant.END_INDEX_PTR);
+        byte[] data = new byte[4];
+        buffer.get(data);
+
+        long endIndexPtr = ByteUtil.getIntLong(data, 0);
+
+        long columnSelectionPtr = endIndexPtr + ipBytesLength * 2L + 4;
+        buffer.position((int) columnSelectionPtr);
+        buffer.get(data);
+
+        this.columnSelection = ByteUtil.getIntLong(data, 0);
+
+        long geoMapPtr = columnSelectionPtr + 4;
+        buffer.position((int) geoMapPtr);
+        buffer.get(data);
+        int geoMapSize = (int)ByteUtil.getIntLong(data, 0);
+
+        buffer.position((int) geoMapPtr + 4);
+        geoMapData = new byte[geoMapSize];
+        buffer.get(geoMapData);
     }
 
     /**
