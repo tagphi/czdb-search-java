@@ -236,6 +236,10 @@ public class DbSearcher {
         firstIndexPtr = ByteUtil.getIntLong(bytes, DbConstant.FIRST_INDEX_PTR);
         long lastIndexPtr = ByteUtil.getIntLong(bytes, DbConstant.END_INDEX_PTR);
         totalIndexBlocks = (int) ((lastIndexPtr - firstIndexPtr) / IndexBlock.getIndexBlockLength(dbType)) + 1;
+
+        byte[] b = new byte[(int) totalHeaderBlockSize];
+        System.arraycopy(bytes, DbConstant.SUPER_PART_LENGTH, b, 0, b.length);
+        initHeaderBlock(b);
     }
 
     private void initBtreeModeParam(RandomAccessFile raf) throws IOException {
@@ -247,26 +251,30 @@ public class DbSearcher {
 
         long fileSizeInFile = ByteUtil.getIntLong(superBytes, DbConstant.FILE_SIZE_PTR);
         long realFileSize = raf.length();
+
         if (fileSizeInFile != realFileSize) {
             throw new RuntimeException(String.format("db file size error, excepted [%s], real [%s]", fileSizeInFile, realFileSize));
         }
+
         byte[] b = new byte[(int) totalHeaderBlockSize];
-        // byte[] b = new byte[4096];
         raf.readFully(b, 0, b.length);
 
+        initHeaderBlock(b);
+    }
+
+    private void initHeaderBlock(byte[] headerBytes) {
         int indexLength = 20;
 
-        //fill the header, b.length / 20
-        int len = b.length / indexLength, idx = 0;
+        int len = headerBytes.length / indexLength, idx = 0;
         HeaderSip = new byte[len][16];
         HeaderPtr = new int[len];
         long dataPtr;
-        for (int i = 0; i < b.length; i += indexLength) {
-            dataPtr = ByteUtil.getIntLong(b, i + 16);
+        for (int i = 0; i < headerBytes.length; i += indexLength) {
+            dataPtr = ByteUtil.getIntLong(headerBytes, i + 16);
             if (dataPtr == 0) {
                 break;
             }
-            System.arraycopy(b, i, HeaderSip[idx], 0, 16);
+            System.arraycopy(headerBytes, i, HeaderSip[idx], 0, 16);
             HeaderPtr[idx] = (int) dataPtr;
             idx++;
         }
@@ -333,8 +341,17 @@ public class DbSearcher {
         // The length of an index block
         int blockLen = IndexBlock.getIndexBlockLength(this.dbType);
 
+        // Use searchInHeader to get the search range
+        int[] sptrNeptr = searchInHeader(ip);
+        int sptr = sptrNeptr[0], eptr = sptrNeptr[1];
+
+        if (sptr == 0) {
+            return null;
+        }
+
+        // Calculate the number of index blocks in the search range
         // Initialize the search range
-        int l = 0, h = totalIndexBlocks;
+        int l = 0, h = (eptr - sptr) / blockLen + 1;
 
         // The start IP and end IP of the current index block
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
@@ -345,7 +362,7 @@ public class DbSearcher {
         // Perform a binary search on the index blocks
         while (l <= h) {
             int m = (l + h) >> 1;
-            int p = (int) (firstIndexPtr + m * blockLen);
+            int p = (int) (sptr + m * blockLen);
             System.arraycopy(dbBinStr, p, sip, 0, ipBytesLength);
             System.arraycopy(dbBinStr, p + ipBytesLength, eip, 0, ipBytesLength);
 
@@ -383,21 +400,9 @@ public class DbSearcher {
         return new DataBlock(region, dataPtr);
     }
 
-    /**
-     * get the region with a int ip address with b-tree algorithm
-     *
-     * @param ip
-     * @throws IOException
-     */
-    private DataBlock bTreeSearch(byte[] ip) throws IOException {
-        //1. define the index block with the binary search
-        if (compareBytes(ip, HeaderSip[0], ipBytesLength) == 0) {
-            return getByIndexPtr(HeaderPtr[0]);
-        } else if (compareBytes(ip, HeaderSip[headerLength - 1], ipBytesLength) == 0) {
-            return getByIndexPtr(HeaderPtr[headerLength - 1]);
-        }
-
+    int[] searchInHeader(byte[] ip) {
         int l = 0, h = headerLength - 1, sptr = 0, eptr = 0;
+
         while (l <= h) {
             int m = (l + h) >> 1;
             int cmp = compareBytes(ip, HeaderSip[m], ipBytesLength);
@@ -413,6 +418,11 @@ public class DbSearcher {
             }
         }
 
+        // less than header range
+        if (l == 0) {
+            return new int[]{0, 0};
+        }
+
         if (l > h) {
             if (l < headerLength) {
                 sptr = HeaderPtr[l - 1];
@@ -422,6 +432,19 @@ public class DbSearcher {
                 eptr = HeaderPtr[h + 1];
             }
         }
+
+        return new int[]{sptr, eptr};
+    }
+
+    /**
+     * get the region with a int ip address with b-tree algorithm
+     *
+     * @param ip
+     * @throws IOException
+     */
+    private DataBlock bTreeSearch(byte[] ip) throws IOException {
+        int[] sptrNeptr = searchInHeader(ip);
+        int sptr = sptrNeptr[0], eptr = sptrNeptr[1];
 
         if (sptr == 0) {
             return null;
@@ -435,8 +458,8 @@ public class DbSearcher {
         raf.seek(sptr);
         raf.readFully(iBuffer, 0, iBuffer.length);
 
-        l = 0;
-        h = blockLen / blen;
+        int l = 0;
+        int h = blockLen / blen;
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
         long dataBlockPtrNSize = 0;
 

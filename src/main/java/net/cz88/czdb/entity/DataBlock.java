@@ -79,11 +79,11 @@ public class DataBlock {
 
     private String unpack(byte[] geoMapData, long columnSelection) throws IOException {
         try (MessageUnpacker regionUnpacker = MessagePack.newDefaultUnpacker(region)) {
-            int geoPosMixSize = regionUnpacker.unpackInt();
+            long geoPosMixSize = regionUnpacker.unpackLong();
             String otherData = regionUnpacker.unpackString();
 
-            int dataLen = (geoPosMixSize >> 24) & 0xFF;
-            int dataPtr = (geoPosMixSize & 0x00FFFFFF);
+            int dataLen = (int)(geoPosMixSize >> 24) & 0xFF;
+            int dataPtr = (int)(geoPosMixSize & 0x00FFFFFF);
 
             // read the region data from the geoMapData
             byte[] regionData = new byte[dataLen];
