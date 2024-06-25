@@ -101,7 +101,7 @@ public class DbSearcher {
         ipBytesLength = dbType == DbType.IPV4 ? 4 : 16;
 
         // load geo setting
-        loadGeoSetting(raf);
+        loadGeoSetting(raf, key);
 
         if (queryType == QueryType.MEMORY) {
             initializeForMemorySearch();
@@ -134,14 +134,14 @@ public class DbSearcher {
             }
 
             dbBinStr = buffer.toByteArray();
-            loadGeoSetting(dbBinStr);
+            loadGeoSetting(dbBinStr, key);
             initMemoryOrBinaryModeParam(dbBinStr, dbBinStr.length);
         } finally {
             is.close();
         }
     }
 
-    private void loadGeoSetting(RandomAccessFile raf) {
+    private void loadGeoSetting(RandomAccessFile raf, String key) {
         // set position to end index ptr + ip byte length * 2 + 4
         try {
             raf.seek(DbConstant.END_INDEX_PTR);
@@ -169,12 +169,15 @@ public class DbSearcher {
             raf.seek(geoMapPtr + 4);
             geoMapData = new byte[geoMapSize];
             raf.readFully(geoMapData);
+
+            Decryptor decryptor = new Decryptor(key);
+            geoMapData = decryptor.decrypt(geoMapData);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void loadGeoSetting(byte[] dbBytes) {
+    private void loadGeoSetting(byte[] dbBytes, String key) {
         ByteBuffer buffer = ByteBuffer.wrap(dbBytes);
 
         // Set ipBytesLength
@@ -208,6 +211,9 @@ public class DbSearcher {
         buffer.position((int) geoMapPtr + 4);
         geoMapData = new byte[geoMapSize];
         buffer.get(geoMapData);
+
+        Decryptor decryptor = new Decryptor(key);
+        geoMapData = decryptor.decrypt(geoMapData);
     }
 
     /**
