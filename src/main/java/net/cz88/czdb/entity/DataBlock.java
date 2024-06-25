@@ -82,6 +82,10 @@ public class DataBlock {
             long geoPosMixSize = regionUnpacker.unpackLong();
             String otherData = regionUnpacker.unpackString();
 
+            if (geoPosMixSize == 0) {
+                return otherData;
+            }
+
             int dataLen = (int)(geoPosMixSize >> 24) & 0xFF;
             int dataPtr = (int)(geoPosMixSize & 0x00FFFFFF);
 

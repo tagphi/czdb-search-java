@@ -156,6 +156,11 @@ public class DbSearcher {
 
             this.columnSelection = ByteUtil.getIntLong(data, 0);
 
+            // not geo mapping
+            if (columnSelection == 0) {
+                return;
+            }
+
             long geoMapPtr = columnSelectionPtr + 4;
             raf.seek(geoMapPtr);
             raf.readFully(data);
@@ -189,6 +194,11 @@ public class DbSearcher {
         buffer.get(data);
 
         this.columnSelection = ByteUtil.getIntLong(data, 0);
+
+        // not geo mapping
+        if (columnSelection == 0) {
+            return;
+        }
 
         long geoMapPtr = columnSelectionPtr + 4;
         buffer.position((int) geoMapPtr);
@@ -335,9 +345,8 @@ public class DbSearcher {
      *
      * @param ip The IP address to search for. It is a byte array representing the IP address.
      * @return The data block containing the region and the data pointer if the search is successful, null otherwise.
-     * @throws UnsupportedEncodingException If the character encoding is not supported.
      */
-    private DataBlock memorySearch(byte[] ip) throws UnsupportedEncodingException {
+    private DataBlock memorySearch(byte[] ip) {
         // The length of an index block
         int blockLen = IndexBlock.getIndexBlockLength(this.dbType);
 

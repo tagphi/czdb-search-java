@@ -9,10 +9,10 @@ import java.nio.file.Files;
 
 public class TestSearcher {
     private static final String IPV6_DB_PATH = "/Users/liucong/Downloads/ipv6.czdb";
-    private static final String IPV4_DB_PATH = "/Users/liucong/Downloads/province/ipv4.czdb";
+    private static final String IPV4_DB_PATH = "/Users/liucong/Downloads/offline_db.czdb";
     private static final String IPV6_IP = "2001:4:113:0:0:0:0:0";
     private static final String IPV4_IP = "1.0.0.255";
-    private static final String KEY = "NMWCI/IyXc/MI+Oc1lCc7A==";
+    private static final String KEY = "3fEhuZUEvDzRjKv9qvAzTQ==";
 
     @Test
     public void ipv6MemoryQueryTest() throws Exception {
@@ -48,7 +48,7 @@ public class TestSearcher {
             double sTime = System.nanoTime();
             String region = searcher.search(ip);
             double cTime = (System.nanoTime() - sTime) / 1000000;
-            System.out.printf("%s in %.5f millseconds\n", region, cTime);
+            System.out.printf("%s \nin %.5f millseconds\n", region, cTime);
             searcher.close();
         } catch (IOException | IpFormatException e) {
             e.printStackTrace();
