@@ -84,3 +84,14 @@ java -cp czdb-search-1.0.jar net.cz88.czdb.SearcherTest -d your-db-file-path -t 
 ```
 
 请将 your-db-file-path 和 your-key 替换为实际的值。  在运行 SearcherTest 后，你可以输入 IP 地址进行查询，或输入 'q' 退出程序。
+
+## 性能测试
+做性能测试，需要额外提供两个参数:
+
+- `-b` 表示进行性能测试
+- `-i` 待查询的IP地址文件路径。文件格式为
+```text
+开始ip\t结束ip
+```
+
+程序会每行抽取一个ip查询，查询完后打印查询时间，查询次数和QPS。
