@@ -1,6 +1,6 @@
 # czdb-search 使用指南
 
-czdb-search 是一个用于在纯真(CZ88)IP库中搜索数据的类。它支持三种类型的搜索算法：内存搜索（MEMORY）、二分搜索（BINARY）和B树搜索（BTREE）。数据库类型（IPv4或IPv6）和查询类型（MEMORY、BINARY、BTREE）在运行时确定。
+czdb-search 是一个用于在纯真(CZ88)IP库中搜索数据的类。它支持三种类型的搜索算法：内存搜索（MEMORY）和B树搜索（BTREE）。数据库类型（IPv4或IPv6）和查询类型（MEMORY、BTREE）在运行时确定。
 
 ## Maven 依赖
 
@@ -39,21 +39,20 @@ String region = searcher.search("IP地址");
 
 ## 查询类型
 
-DbSearcher 支持三种查询类型：MEMORY、BINARY 和 BTREE。
+DbSearcher 支持三种查询类型：MEMORY 和 BTREE。
 
 - MEMORY：此模式是线程安全的，将数据存储在内存中。
-- BINARY：此模式使用二分搜索直接查询索引。它不是线程安全的。不同的线程可以使用不同的查询对象。
 - BTREE：此模式使用 B-tree 数据结构进行查询。它不是线程安全的。不同的线程可以使用不同的查询对象。
 
 你可以在创建 DbSearcher 实例时选择查询类型。
 
 ```java
-DbSearcher searcher = new DbSearcher("数据库文件路径", QueryType.BINARY, "密钥");
+DbSearcher searcher = new DbSearcher("数据库文件路径", QueryType.BTREE, "密钥");
 ```
 
 ## 线程安全
 
-请注意，只有 MEMORY 查询模式是线程安全的。如果你在高并发环境下使用 BINARY 或 BTREE 查询模式，可能会导致打开的文件过多的错误。在这种情况下，你可以增加内核中允许打开的最大文件数（fs.file-max），或者使用 MEMORY 查询模式。当然更合理的一个方式是为线程池中的每一个线程只创建一个DbSearcher实例。
+请注意，只有 MEMORY 查询模式是线程安全的。如果你在高并发环境下使用 BTREE 查询模式，可能会导致打开的文件过多的错误。在这种情况下，你可以增加内核中允许打开的最大文件数（fs.file-max），或者使用 MEMORY 查询模式。当然更合理的一个方式是为线程池中的每一个线程只创建一个DbSearcher实例。
 
 ## 关闭数据库
 
@@ -74,7 +73,7 @@ searcher.close();
 然后，你可以运行 `SearcherTest`。它需要三个参数：
 
 - `-d` 或 `--dbFilePath`：数据库文件的路径。
-- `-t` 或 `--queryType`：查询类型。有效的类型有 `MEMORY`、`BINARY` 和 `BTREE`。
+- `-t` 或 `--queryType`：查询类型。有效的类型有 `MEMORY` 和 `BTREE`。
 - `-k` 或 `--key`：用于解密数据库文件的密钥。
 
 以下是一个运行 `SearcherTest` 的示例命令：

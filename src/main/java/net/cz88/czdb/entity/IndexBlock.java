@@ -93,17 +93,17 @@ public class IndexBlock {
     public static int getIndexBlockLength(DbType dbType) {
         // 16 bytes for start IP, 16 bytes for end IP if IPV6
         // or 4 bytes for start IP and 4 bytes for end IP if IPV4
-        // + 4 bytes for data ptr and data len
-        return dbType == DbType.IPV4 ? 12 : 36;
+        // + 4 bytes for data ptr and 1 bytedata len
+        return dbType == DbType.IPV4 ? 13 : 37;
     }
 
     /**
      * Returns a byte array representing the index block.
      * The byte array is structured as follows:
      * +------------+-----------+-----------+
-     * | 4/16 bytes    | 4/16bytes   | 4bytes    |
+     * | 4/16 bytes    | 4/16bytes   | 4bytes    | 1bytes
      * +------------+-----------+-----------+
-     *  start ip      end ip      data ptr + len
+     *  start ip      end ip      data ptr        len
      *
      * @return A byte array representing the index block.
      */
@@ -115,8 +115,8 @@ public class IndexBlock {
         System.arraycopy(endIp, 0, b, ipBytesLength, ipBytesLength);
 
         //write the data ptr and the length
-        long mix = dataPtr | ((dataLen << 24) & 0xFF000000L);
-        ByteUtil.writeIntLong(b, ipBytesLength * 2, mix);
+        ByteUtil.writeIntLong(b, ipBytesLength * 2, dataPtr);
+        ByteUtil.write( b, ipBytesLength * 2 + 4, dataLen, 1);
 
         return b;
     }

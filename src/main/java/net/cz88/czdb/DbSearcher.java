@@ -107,8 +107,6 @@ public class DbSearcher {
             initializeForMemorySearch();
         } else if (queryType == QueryType.BTREE) {
             initBtreeModeParam(raf);
-        } else if (queryType == QueryType.BINARY) {
-            initializeForBinarySearch();
         }
     }
 
@@ -150,7 +148,7 @@ public class DbSearcher {
 
             long endIndexPtr = ByteUtil.getIntLong(data, 0);
 
-            long columnSelectionPtr = endIndexPtr + ipBytesLength * 2L + 4;
+            long columnSelectionPtr = endIndexPtr + IndexBlock.getIndexBlockLength(dbType);
             raf.seek(columnSelectionPtr);
             raf.readFully(data);
 
@@ -323,10 +321,6 @@ public class DbSearcher {
                 // Perform a memory search
                 dataBlock = memorySearch(ipBytes);
                 break;
-            case BINARY:
-                // Perform a binary search
-                dataBlock = binarySearch(ipBytes);
-                break;
             case BTREE:
                 // Perform a B-tree search
                 dataBlock = bTreeSearch(ipBytes);
@@ -372,7 +366,8 @@ public class DbSearcher {
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
 
         // The data pointer of the found data block
-        long dataBlockPtrNSize = 0;
+        int dataPtr = 0;
+        int dataLen = 0;
 
         // Perform a binary search on the index blocks
         while (l <= h) {
@@ -387,7 +382,8 @@ public class DbSearcher {
             // If the IP is less than the start IP, search the left half
             if (cmpStart >= 0 && cmpEnd <= 0) {
                 // IP is in this block
-                dataBlockPtrNSize = ByteUtil.getIntLong(dbBinStr, p + ipBytesLength * 2);
+                dataPtr = (int)ByteUtil.getIntLong(dbBinStr, p + ipBytesLength * 2);
+                dataLen = ByteUtil.getInt1(dbBinStr, p + ipBytesLength * 2 + 4);
                 break;
             } else if (cmpStart < 0) {
                 // IP is less than this block, search in the left half
@@ -399,13 +395,9 @@ public class DbSearcher {
         }
 
         //not matched
-        if (dataBlockPtrNSize == 0) {
+        if (dataPtr == 0) {
             return null;
         }
-
-        // Get the data length and the data pointer from the data wrapper
-        int dataLen = (int) ((dataBlockPtrNSize >> 24) & 0xFF);
-        int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
 
         // Get the region from the database binary string
         byte[] region = new byte[dataLen];
@@ -442,9 +434,11 @@ public class DbSearcher {
             if (l < headerLength) {
                 sptr = HeaderPtr[l - 1];
                 eptr = HeaderPtr[l];
-            } else if (h >= 0) {
+            } else if (h >= 0 && h + 1 < headerLength) {
                 sptr = HeaderPtr[h];
                 eptr = HeaderPtr[h + 1];
+            } else {
+                return new int[]{0, 0};
             }
         }
 
@@ -476,7 +470,9 @@ public class DbSearcher {
         int l = 0;
         int h = blockLen / blen;
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
-        long dataBlockPtrNSize = 0;
+
+        int dataPtr = 0;
+        int dataLen = 0;
 
         while (l <= h) {
             int m = (l + h) >> 1;
@@ -489,7 +485,8 @@ public class DbSearcher {
 
             if (cmpStart >= 0 && cmpEnd <= 0) {
                 // IP is in this block
-                dataBlockPtrNSize = ByteUtil.getIntLong(iBuffer, p + ipBytesLength * 2);
+                dataPtr = (int)ByteUtil.getIntLong(iBuffer, p + ipBytesLength * 2);
+                dataLen = ByteUtil.getInt1(iBuffer, p + ipBytesLength * 2 + 4);
 
                 break;
             } else if (cmpStart < 0) {
@@ -502,76 +499,16 @@ public class DbSearcher {
         }
 
         //not matched
-        if (dataBlockPtrNSize == 0) {
+        if (dataPtr == 0) {
             return null;
         }
 
         //3. get the data
-        int dataLen = (int) ((dataBlockPtrNSize >> 24) & 0xFF);
-        int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
-
         raf.seek(dataPtr);
         byte[] region = new byte[dataLen];
         raf.readFully(region, 0, region.length);
         return new DataBlock(region, dataPtr);
     }
-
-    /**
-     * get the region with a int ip address with binary search algorithm
-     *
-     * @param ip
-     * @throws IOException
-     */
-    private DataBlock binarySearch(byte[] ip) throws IOException {
-        int blen = IndexBlock.getIndexBlockLength(this.dbType);
-
-        //search the index blocks to define the data
-        int l = 0, h = totalIndexBlocks;
-        byte[] buffer = new byte[blen];
-        byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
-        long dataBlockPtrNSize = 0;
-
-        while (l <= h) {
-            int m = (l + h) >> 1;
-
-            //set the file pointer
-            raf.seek(firstIndexPtr + (long) m * blen);
-            raf.readFully(buffer, 0, buffer.length);
-            System.arraycopy(buffer, 0, sip, 0, ipBytesLength);
-            System.arraycopy(buffer, ipBytesLength, eip, 0, ipBytesLength);
-
-            int cmpStart = compareBytes(ip, sip, ipBytesLength);
-            int cmpEnd = compareBytes(ip, eip, ipBytesLength);
-
-            if (cmpStart >= 0 && cmpEnd <= 0) {
-                // IP is in this block
-                dataBlockPtrNSize = ByteUtil.getIntLong(buffer, ipBytesLength * 2);
-
-                break;
-            } else if (cmpStart < 0) {
-                // IP is less than this block, search in the left half
-                h = m - 1;
-            } else {
-                // IP is greater than this block, search in the right half
-                l = m + 1;
-            }
-        }
-
-        //not matched
-        if (dataBlockPtrNSize == 0) {
-            return null;
-        }
-
-        //get the data
-        int dataLen = (int) ((dataBlockPtrNSize >> 24) & 0xFF);
-        int dataPtr = (int) ((dataBlockPtrNSize & 0x00FFFFFF));
-
-        raf.seek(dataPtr);
-        byte[] region = new byte[dataLen];
-        raf.readFully(region, 0, region.length);
-        return new DataBlock(region, dataPtr);
-    }
-
 
     /**
      * get by index ptr

@@ -11,14 +11,6 @@ public enum QueryType {
      */
     MEMORY,
     /**
-     * Represents the BINARY mode.
-     * This mode uses a binary search algorithm for querying.
-     * It is not thread-safe. Different threads can use different query objects.
-     * In case of high concurrency, it may lead to too many open files error.
-     * In such cases, either increase the maximum allowed open files in the kernel (fs.file-max) or use the MEMORY mode.
-     */
-    BINARY,
-    /**
      * Represents the BTREE mode.
      * This mode uses a B-tree data structure for querying.
      * It is not thread-safe. Different threads can use different query objects.
