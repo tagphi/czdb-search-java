@@ -228,19 +228,6 @@ public class DbSearcher {
         initMemoryOrBinaryModeParam(dbBinStr, dbBinStr.length);
     }
 
-    /**
-     * Initializes the DbSearcher instance for binary search.
-     * Reads only the super block of the database file into memory and then initializes the parameters for memory or binary search.
-     *
-     * @throws IOException If an error occurs during reading from the database file.
-     */
-    private void initializeForBinarySearch() throws IOException {
-        raf.seek(0L);
-        byte[] superBytes = new byte[DbConstant.SUPER_PART_LENGTH];
-        raf.readFully(superBytes, 0, superBytes.length);
-        initMemoryOrBinaryModeParam(superBytes, raf.length());
-    }
-
     private void initMemoryOrBinaryModeParam(byte[] bytes, long fileSize) {
         totalHeaderBlockSize = ByteUtil.getIntLong(bytes, DbConstant.HEADER_BLOCK_PTR);
         long fileSizeInFile = ByteUtil.getIntLong(bytes, DbConstant.FILE_SIZE_PTR);
