@@ -347,7 +347,7 @@ public class DbSearcher {
 
         // Calculate the number of index blocks in the search range
         // Initialize the search range
-        int l = 0, h = (eptr - sptr) / blockLen + 1;
+        int l = 0, h = (eptr - sptr) / blockLen;
 
         // The start IP and end IP of the current index block
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
@@ -424,8 +424,11 @@ public class DbSearcher {
             } else if (h >= 0 && h + 1 < headerLength) {
                 sptr = HeaderPtr[h];
                 eptr = HeaderPtr[h + 1];
-            } else {
-                return new int[]{0, 0};
+            } else { // search to last header line, possible in last index block
+                sptr = HeaderPtr[headerLength - 1];
+                int blockLen = IndexBlock.getIndexBlockLength(this.dbType);
+
+                eptr = sptr + blockLen;
             }
         }
 

@@ -9,10 +9,10 @@ import java.nio.file.Files;
 
 public class TestSearcher {
     private static final String IPV6_DB_PATH = "/Users/liucong/Downloads/ipv6.czdb";
-    private static final String IPV4_DB_PATH = "/Users/liucong/Downloads/offline_db.czdb";
+    private static final String IPV4_DB_PATH = "/Users/liucong/Downloads/ipv4.czdb";
     private static final String IPV6_IP = "2001:4:113:0:0:0:0:0";
-    private static final String IPV4_IP = "1.0.0.255";
-    private static final String KEY = "3fEhuZUEvDzRjKv9qvAzTQ==";
+    private static final String IPV4_IP = "1.64.219.93";
+    private static final String KEY = "Mef4JXjVsTvGAeFj9Z06FQ==";
 
     @Test
     public void ipv6MemoryQueryTest() throws Exception {
