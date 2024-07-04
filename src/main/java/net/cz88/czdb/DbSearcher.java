@@ -190,7 +190,7 @@ public class DbSearcher {
 
         long endIndexPtr = ByteUtil.getIntLong(data, 0);
 
-        long columnSelectionPtr = endIndexPtr + ipBytesLength * 2L + 4;
+        long columnSelectionPtr = endIndexPtr + IndexBlock.getIndexBlockLength(dbType);
         buffer.position((int) columnSelectionPtr);
         buffer.get(data);
 
