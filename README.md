@@ -39,7 +39,7 @@ String region = searcher.search("IP地址");
 
 ## 查询类型
 
-DbSearcher 支持三种查询类型：MEMORY 和 BTREE。
+DbSearcher 支持2种查询类型：MEMORY 和 BTREE。
 
 - MEMORY：此模式是线程安全的，将数据存储在内存中。
 - BTREE：此模式使用 B-tree 数据结构进行查询。它不是线程安全的。不同的线程可以使用不同的查询对象。

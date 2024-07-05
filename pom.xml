@@ -156,7 +156,7 @@
         <profile>
             <id>release</id>
             <properties>
-                <project.release.version>1.0.1</project.release.version>
+                <project.release.version>1.0.2</project.release.version>
             </properties>
             <build>
                 <plugins>
