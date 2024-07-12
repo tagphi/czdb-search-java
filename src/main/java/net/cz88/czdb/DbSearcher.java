@@ -9,10 +9,10 @@ import net.cz88.czdb.utils.ByteUtil;
 import net.cz88.czdb.utils.HyperHeaderDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.net.util.IPAddressUtil;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -560,12 +560,13 @@ public class DbSearcher {
         }
     }
 
-    private byte[] getIpBytes(String ip) throws IpFormatException {
+    private byte[] getIpBytes(String ip) throws IpFormatException, RuntimeException {
         byte[] ipBytes;
-        if (dbType == DbType.IPV4) {
-            ipBytes = IPAddressUtil.textToNumericFormatV4(ip);
-        } else {
-            ipBytes = IPAddressUtil.textToNumericFormatV6(ip);
+        try {
+            InetAddress inetAddress = InetAddress.getByName(ip);
+            ipBytes = inetAddress.getAddress();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
         }
         if (ipBytes == null) {
             throw new IpFormatException(String.format("ip [%s] format error for %s", ip, dbType));
