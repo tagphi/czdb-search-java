@@ -8,11 +8,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 public class TestSearcher {
-    private static final String IPV6_DB_PATH = "/Users/liucong/Downloads/ipv6.czdb";
-    private static final String IPV4_DB_PATH = "/Users/liucong/Downloads/tony/ipv4.czdb";
+    private static final String IPV6_DB_PATH = "/Users/liucong/Downloads/RTBAsia/";
+    private static final String IPV4_DB_PATH = "/Users/liucong/Downloads/RTBAsia/rtbasiav4.czdb";
     private static final String IPV6_IP = "2001:4:113:0:0:0:0:0";
-    private static final String IPV4_IP = "1.64.219.93";
-    private static final String KEY = "UBN0Iz3juX2qjK3sWbwcHQ==";
+    private static final String IPV4_IP = "14.9.15.0";
+    private static final String KEY = "LDZ63Uu6DjwdaNdeDnC3iA==";
 
     @Test
     public void ipv6MemoryQueryTest() throws Exception {

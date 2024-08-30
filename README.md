@@ -13,7 +13,7 @@ czdb-search 是一个用于在纯真(CZ88)IP库中搜索数据的类。它支持
     <version>${cz88db.version}</version>
 </dependency>
 ```
-请替换`${cz88db.version}`为你想要使用的版本。目前最新的版本是`1.0.2.1`。
+请替换`${cz88db.version}`为你想要使用的版本。目前最新的版本是`1.0.2.2`。
 
 ## 支持 IPv4 和 IPv6
 
@@ -81,7 +81,7 @@ searcher.close();
 以下是一个运行 `SearcherTest` 的示例命令：
 
 ```bash
-java -cp czdb-search-1.0.jar net.cz88.czdb.SearcherTest -d your-db-file-path -t MEMORY -k your-key
+java -cp czdb-search-1.0.2.2.jar net.cz88.czdb.SearcherTest -d your-db-file-path -t MEMORY -k your-key
 ```
 
 请将 your-db-file-path 和 your-key 替换为实际的值。  在运行 SearcherTest 后，你可以输入 IP 地址进行查询，或输入 'q' 退出程序。

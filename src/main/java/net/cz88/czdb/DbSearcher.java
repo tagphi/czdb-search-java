@@ -413,7 +413,7 @@ public class DbSearcher {
         }
 
         // less than header range
-        if (l == 0) {
+        if (l == 0 && h <= 0) {
             return new int[]{0, 0};
         }
 
