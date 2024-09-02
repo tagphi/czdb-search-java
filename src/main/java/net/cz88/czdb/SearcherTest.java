@@ -2,9 +2,6 @@ package net.cz88.czdb;
 
 import net.cz88.czdb.exception.IpFormatException;
 import org.apache.commons.cli.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -16,8 +13,6 @@ import java.util.Random;
  * It uses Apache Commons CLI for command line arguments parsing.
  */
 public class SearcherTest {
-    private static final Logger log = LoggerFactory.getLogger(SearcherTest.class);
-
     public static void benchmark(DbSearcher searcher, String ipFilePath) throws IOException, IpFormatException {
         BufferedReader reader = new BufferedReader(new FileReader(ipFilePath));
         int totalLines = 0;

@@ -7,8 +7,6 @@ import net.cz88.czdb.entity.IndexBlock;
 import net.cz88.czdb.exception.IpFormatException;
 import net.cz88.czdb.utils.ByteUtil;
 import net.cz88.czdb.utils.HyperHeaderDecoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -29,9 +27,6 @@ import java.nio.file.Paths;
  * The class also provides a method to close the database.
  */
 public class DbSearcher {
-    // Logger instance for logging events, info, errors etc.
-    private static final Logger logger = LoggerFactory.getLogger(DbSearcher.class);
-
     // Enum representing the type of the database (IPv4 or IPv6)
     private DbType dbType;
 
