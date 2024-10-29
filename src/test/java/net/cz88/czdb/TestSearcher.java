@@ -43,7 +43,7 @@ public class TestSearcher {
             if (useStream) {
                 searcher = new DbSearcher(Files.newInputStream(new File(dbPath).toPath()), QueryType.MEMORY, KEY);
             } else {
-                searcher = new DbSearcher(dbPath, QueryType.MEMORY, KEY);
+                searcher = new DbSearcher(dbPath, QueryType.BTREE, KEY);
             }
             double sTime = System.nanoTime();
             String region = searcher.search(ip);

@@ -11,9 +11,11 @@ import net.cz88.czdb.utils.HyperHeaderDecoder;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.regex.Pattern;
 
 
 /**
@@ -179,14 +181,14 @@ public class DbSearcher {
         dbType = (superBytes[0] & 1) == 0 ? DbType.IPV4 : DbType.IPV6;
         ipBytesLength = dbType == DbType.IPV4 ? 4 : 16;
 
-        buffer.position(DbConstant.END_INDEX_PTR);
+        ((Buffer)buffer).position(DbConstant.END_INDEX_PTR);
         byte[] data = new byte[4];
         buffer.get(data);
 
         long endIndexPtr = ByteUtil.getIntLong(data, 0);
 
         long columnSelectionPtr = endIndexPtr + IndexBlock.getIndexBlockLength(dbType);
-        buffer.position((int) columnSelectionPtr);
+        ((Buffer)buffer).position((int) columnSelectionPtr);
         buffer.get(data);
 
         this.columnSelection = ByteUtil.getIntLong(data, 0);
@@ -197,11 +199,11 @@ public class DbSearcher {
         }
 
         long geoMapPtr = columnSelectionPtr + 4;
-        buffer.position((int) geoMapPtr);
+        ((Buffer)buffer).position((int) geoMapPtr);
         buffer.get(data);
         int geoMapSize = (int)ByteUtil.getIntLong(data, 0);
 
-        buffer.position((int) geoMapPtr + 4);
+        ((Buffer)buffer).position((int) geoMapPtr + 4);
         geoMapData = new byte[geoMapSize];
         buffer.get(geoMapData);
 
@@ -291,6 +293,9 @@ public class DbSearcher {
      * @throws IOException If an I/O error occurs during the search.
      */
     public String search(String ip) throws IpFormatException, IOException {
+        // Validate the IP address based on dbType
+        validateIp(ip);
+
         // Convert the IP address to a byte array
         byte[] ipBytes = getIpBytes(ip);
 
@@ -623,6 +628,32 @@ public class DbSearcher {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    private static final String IPV6_PATTERN =
+            "([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|" +      // 1:2:3:4:5:6:7:8
+                    "([0-9a-fA-F]{1,4}:){1,7}:|" +                     // 1::                              1:2:3:4:5:6:7::
+                    "([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|" +     // 1::8             1:2:3:4:5:6::8
+                    "([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|" + // 1::7:8         1:2:3:4:5::7:8
+                    "([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|" + // 1::6:7:8       1:2:3:4::6:7:8
+                    "([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|" + // 1::5:6:7:8     1:2:3::5:6:7:8
+                    "([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|" + // 1::4:5:6:7:8   1:2::4:5:6:7:8
+                    "[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|" +   // 1::3:4:5:6:7:8  1::3:4:5:6:7:8
+                    ":((:[0-9a-fA-F]{1,4}){1,7}|:)|" +                 // ::2:3:4:5:6:7:8 ::8
+                    "fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|" + // fe80::7:8%eth0   fe80::7:8%1
+                    "::(ffff(:0{1,4}){0,1}:){0,1}" +                   // ::255.255.255.255, ::ffff:0:255.255.255.255
+                    "([0-9]{1,3}\\.){3,3}[0-9]{1,3}|" +                // IPv4 mapped IPv6 addresses
+                    "([0-9a-fA-F]{1,4}:){1,4}:" +                      // 1:2:3:4:5:6:1.2.3.4
+                    "([0-9]{1,3}\\.){3,3}[0-9]{1,3}";
+
+    private static final Pattern V6_PATTERN = Pattern.compile("^(" + IPV6_PATTERN + ")$");
+
+    private void validateIp(String ip) throws IllegalArgumentException {
+        String ipv4Pattern = "^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+
+        if ((dbType == DbType.IPV4 && !ip.matches(ipv4Pattern)) || (dbType == DbType.IPV6 && !V6_PATTERN.matcher(ip).matches())) {
+            throw new IllegalArgumentException("Invalid IP address for the specified database type.");
         }
     }
 }
