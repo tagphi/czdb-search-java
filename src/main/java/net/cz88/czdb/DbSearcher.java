@@ -87,7 +87,15 @@ public class DbSearcher {
      */
     public DbSearcher(String dbFile, QueryType queryType, String key) throws Exception {
         this.queryType = queryType;
-        HyperHeaderBlock headerBlock = HyperHeaderDecoder.decrypt(Files.newInputStream(Paths.get(dbFile)), key);
+
+        HyperHeaderBlock headerBlock;
+
+        try (InputStream is = Files.newInputStream(Paths.get(dbFile))) {
+            headerBlock = HyperHeaderDecoder.decrypt(is, key);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
         raf = new Cz88RandomAccessFile(dbFile, "r", headerBlock.getHeaderSize());
 
         // set db type

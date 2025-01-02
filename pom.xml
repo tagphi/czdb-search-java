@@ -45,7 +45,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <sl4j-api.version>1.7.25</sl4j-api.version>
         <java.version>1.8</java.version>
-        <project.release.version>1.0.2.5</project.release.version>
+        <project.release.version>1.0.2.7</project.release.version>
         <javadoc.opts>-Xdoclint:none -quiet</javadoc.opts>
     </properties>
 
@@ -93,7 +93,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -158,7 +157,7 @@
         <profile>
             <id>release</id>
             <properties>
-                <project.release.version>1.0.2.5</project.release.version>
+                <project.release.version>1.0.2.7</project.release.version>
             </properties>
             <build>
                 <plugins>
@@ -235,6 +234,11 @@
             <id>snapshots</id>
             <url>http://mvn.rtbasia.com/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>
+<!--        <repository>-->
+<!--            <id>TAGPHI</id>-->
+<!--&lt;!&ndash;            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>&ndash;&gt;-->
+<!--            <url>https://mvn.rtbasia.com/nexus/content/repositories/TAGPHI</url>-->
+<!--        </repository>-->
         <repository>
             <id>central</id>
             <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
