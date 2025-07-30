@@ -355,7 +355,7 @@ public class DbSearcher {
 
         // Calculate the number of index blocks in the search range
         // Initialize the search range
-        int l = 0, h = (eptr - sptr) / blockLen;
+        int l = 0, h = (eptr - sptr) / blockLen - 1;
 
         // The start IP and end IP of the current index block
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
@@ -466,7 +466,7 @@ public class DbSearcher {
         raf.readFully(iBuffer, 0, iBuffer.length);
 
         int l = 0;
-        int h = blockLen / blen;
+        int h = blockLen / blen - 1;
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
 
         int dataPtr = 0;
