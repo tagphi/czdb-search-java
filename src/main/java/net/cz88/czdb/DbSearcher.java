@@ -355,7 +355,7 @@ public class DbSearcher {
 
         // Calculate the number of index blocks in the search range
         // Initialize the search range
-        int l = 0, h = (eptr - sptr) / blockLen - 1;
+        int l = 0, h = (eptr - sptr) / blockLen;
 
         // The start IP and end IP of the current index block
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
@@ -368,6 +368,12 @@ public class DbSearcher {
         while (l <= h) {
             int m = (l + h) >> 1;
             int p = (int) (sptr + m * blockLen);
+
+            // eip 的指针已经超过 eptr 了，说明已经搜索到最后一页并且没找到，直接退出
+            if (p + ipBytesLength > eptr && m == 1) {
+                break;
+            }
+
             System.arraycopy(dbBinStr, p, sip, 0, ipBytesLength);
             System.arraycopy(dbBinStr, p + ipBytesLength, eip, 0, ipBytesLength);
 
@@ -466,7 +472,7 @@ public class DbSearcher {
         raf.readFully(iBuffer, 0, iBuffer.length);
 
         int l = 0;
-        int h = blockLen / blen - 1;
+        int h = blockLen / blen;
         byte[] sip = new byte[ipBytesLength], eip = new byte[ipBytesLength];
 
         int dataPtr = 0;
@@ -475,6 +481,14 @@ public class DbSearcher {
         while (l <= h) {
             int m = (l + h) >> 1;
             int p = m * blen;
+
+            // 如果 p 的指针已经超过 blockLen 了，说明已经搜索到最后一页并且没找到，直接退出
+            // m == 1说明是在header中搜索时没有直接找到，返回了最后一个段的情况，这个段是不满的，所以要这样处理下
+            // TODO: 也可能有更好的办法
+            if (p >= blockLen && m == 1) {
+                break;
+            }
+
             System.arraycopy(iBuffer, p, sip, 0, ipBytesLength);
             System.arraycopy(iBuffer, p + ipBytesLength, eip, 0, ipBytesLength);
 

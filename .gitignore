@@ -31,3 +31,5 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+dependency-reduced-pom.xml
+.DS_Store
