@@ -13,7 +13,7 @@ czdb-search 是一个用于在纯真(CZ88)IP库中搜索数据的类。它支持
     <version>${cz88db.version}</version>
 </dependency>
 ```
-请替换`${cz88db.version}`为你想要使用的版本。目前最新的版本是`1.0.2.9`。
+请替换`${cz88db.version}`为你想要使用的版本。目前最新的版本是`1.0.2.10`。
 
 ## 支持 IPv4 和 IPv6
 

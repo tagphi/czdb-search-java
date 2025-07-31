@@ -5,7 +5,7 @@
 
     <groupId>net.cz88</groupId>
     <artifactId>czdb-search</artifactId>
-    <version>1.0.2.9</version>
+    <version>1.0.2.10</version>
     <packaging>jar</packaging>
 
     <name>czdb-search</name>
